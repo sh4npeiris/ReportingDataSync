@@ -1,0 +1,284 @@
+- SourceQuery: >
+    SELECT * FROM [Artifact].[Artifact] WHERE DateCreated > @lastRunDate
+  TargetTable: "[Artifact].[Artifact]"
+  IncrementalColumn: "DateCreated"
+
+- SourceQuery: >
+    SELECT Id, ArtifactId, OwnerScopeId, DateCreated, LastUpdated, DateDeleted, ParentCommentId FROM [Artifact].[Comment] WHERE DateCreated > @lastRunDate
+  TargetTable: "[Artifact].[Comment]"
+  IncrementalColumn: "DateCreated"
+
+- SourceQuery: >
+    SELECT * FROM [Artifact].[Reaction] WHERE DateCreated > @lastRunDate
+  TargetTable: "[Artifact].[Reaction]"
+  IncrementalColumn: "DateCreated"
+
+- SourceQuery: >
+    SELECT * FROM [Artifact].[Tag] WHERE Created > @lastRunDate
+  TargetTable: "[Artifact].[Tag]"
+  IncrementalColumn: "Created"
+
+- SourceQuery: >
+    SELECT Id, SchoolId, CreatedBy, Grades, Name, DateArchived, DateDeleted, DateCreated, LastUpdated, ExternalId FROM [Classroom].[Classroom]
+  TargetTable: "[Classroom].[Classroom]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Classroom].[FamilyLastVisited] WHERE Date > @lastRunDate
+  TargetTable: "[Classroom].[FamilyLastVisited]"
+  IncrementalColumn: "Date"
+
+- SourceQuery: >
+    SELECT * FROM [Classroom].[StudentLastVisited] WHERE Date > @lastRunDate
+  TargetTable: "[Classroom].[StudentLastVisited]"
+  IncrementalColumn: "Date"
+
+- SourceQuery: >
+    SELECT * FROM [Classroom].[Students] WHERE Created > @lastRunDate
+  TargetTable: "[Classroom].[Students]"
+  IncrementalColumn: "Created"
+
+- SourceQuery: >
+    SELECT * FROM [Classroom].[TeacherLastVisited] WHERE Date > @lastRunDate
+  TargetTable: "[Classroom].[TeacherLastVisited]"
+  IncrementalColumn: "Date"
+
+- SourceQuery: >
+    SELECT * FROM [Classroom].[Teachers] WHERE Created > @lastRunDate
+  TargetTable: "[Classroom].[Teachers]"
+  IncrementalColumn: "Created"
+
+- SourceQuery: >
+    SELECT * FROM [District].[District]
+  TargetTable: "[District].[District]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [District].[State]
+  TargetTable: "[District].[State]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Family].[Record]
+  TargetTable: "[Family].[Record]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Import].[Invite]
+  TargetTable: "[Import].[Invite]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Import].[Record] ir WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate AND NOT EXISTS (SELECT 1 FROM [Student].[Record] s WHERE s.RecordId = ir.Id)
+  TargetTable: "[Import].[Record]"
+  IncrementalColumn: "Created"
+
+- SourceQuery: >
+    SELECT * FROM [Invite].[Record] WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate
+  TargetTable: "[Invite].[Record]"
+  IncrementalColumn: "LastUpdated"
+
+- SourceQuery: >
+    SELECT * FROM [License].[District]
+  TargetTable: "[License].[District]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [License].[PortfolioTemplates]
+  TargetTable: "[License].[PortfolioTemplates]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [License].[Proficiency]
+  TargetTable: "[License].[Proficiency]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [License].[QrCode]
+  TargetTable: "[License].[QrCode]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [License].[SpacesSchools]
+  TargetTable: "[License].[SpacesSchools]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Link].[ClassroomLink] WHERE Created > @lastRunDate
+  TargetTable: "[Link].[ClassroomLink]"
+  IncrementalColumn: "Created"
+
+- SourceQuery: >
+    SELECT Id, ThreadId, OwnerScopeId, Created, Deleted FROM [Message].[Message] WHERE Created > @lastRunDate
+  TargetTable: "[Message].[Message]"
+  IncrementalColumn: "Created"
+
+- SourceQuery: >
+    SELECT * FROM [Portfolio].[Artifact]
+  TargetTable: "[Portfolio].[Artifact]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT Id, StudentId, TemplateId, Created, LastUpdated FROM [Portfolio].[Portfolio] WHERE Created > @lastRunDate
+  TargetTable: "[Portfolio].[Portfolio]"
+  IncrementalColumn: "Created"
+
+- SourceQuery: >
+    SELECT * FROM [Portfolio].[Section]
+  TargetTable: "[Portfolio].[Section]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Portfolio].[ShareCode]
+  TargetTable: "[Portfolio].[ShareCode]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT Id, Name, Grades, Color, Published, TeacherCanViewAllStudents, DateDeleted FROM [Portfolio].[Template]
+  TargetTable: "[Portfolio].[Template]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Portfolio].[TemplateTarget]
+  TargetTable: "[Portfolio].[TemplateTarget]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Resource].[Proficiency]
+  TargetTable: "[Resource].[Proficiency]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [School].[School]
+  TargetTable: "[School].[School]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Scope].[Node]
+  TargetTable: "[Scope].[Node]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Space].[Artifact]
+  TargetTable: "[Space].[Artifact]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT [Space].[ArtifactTarget].*, [Artifact].[Artifact].DateCreated FROM [Space].[ArtifactTarget] INNER JOIN [Artifact].[Artifact] ON [Space].[ArtifactTarget].ArtifactId = [Artifact].[Artifact].Id WHERE [Artifact].[Artifact].DateCreated > @lastRunDate
+  TargetTable: "[Space].[ArtifactTarget]"
+  IncrementalColumn: "DateCreated"
+
+- SourceQuery: >
+    SELECT * FROM [Space].[Groups]
+  TargetTable: "[Space].[Groups]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Space].[Report]
+  TargetTable: "[Space].[Report]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT sa.*, aa.DateCreated FROM [Space].[Artifact] sa INNER JOIN [Artifact].[Artifact] aa ON sa.ArtifactId = aa.[Id] WHERE aa.DateCreated > @lastRunDate
+  TargetTable: "[Space].[ReportArtifact]"
+  IncrementalColumn: "DateCreated"
+
+- SourceQuery: >
+    SELECT Id, ClassroomId, Type, Color, Created, LastUpdated, Deleted FROM [Space].[Space] WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate
+  TargetTable: "[Space].[Space]"
+  IncrementalColumn: "LastUpdated"
+
+- SourceQuery: >
+    SELECT * FROM [Statistics].[Logins] WHERE DateTime > @lastRunDate
+  TargetTable: "[Statistics].[Logins]"
+  IncrementalColumn: "DateTime"
+
+- SourceQuery: >
+    SELECT * FROM [Student].[Record]
+  TargetTable: "[Student].[Record]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Tags].[Proficiency]
+  TargetTable: "[Tags].[Proficiency]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Tags].[ProficiencyScaleSet]
+  TargetTable: "[Tags].[ProficiencyScaleSet]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT Id, REPLACE(Subject, ',', '-') AS Subject, EducationLevels FROM [Tags].[StandardSets]
+  TargetTable: "[Tags].[StandardSets]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT Id, StandardSetId FROM [Tags].[Tag]
+  TargetTable: "[Tags].[Tag]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Teacher].[Record]
+  TargetTable: "[Teacher].[Record]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [User].[Admin]
+  TargetTable: "[User].[Admin]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [User].[Email] ue WHERE NOT EXISTS (SELECT 1 FROM [User].[Student] s WHERE s.UserID = ue.UserId)
+  TargetTable: "[User].[Email]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [User].[Family]
+  TargetTable: "[User].[Family]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [User].[Profile] up WHERE NOT EXISTS (SELECT 1 FROM [User].[Student] s WHERE s.UserID = up.UserId)
+  TargetTable: "[User].[Profile]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [User].[Student]
+  TargetTable: "[User].[Student]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [User].[Teacher]
+  TargetTable: "[User].[Teacher]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [User].[User]
+  TargetTable: "[User].[User]"
+  IncrementalColumn: ""
+
+- SourceQuery: >
+    SELECT * FROM [Assessment].[Assessment] WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate
+  TargetTable: "[Assessment].[Assessment]"
+  IncrementalColumn: "LastUpdated"
+
+- SourceQuery: >
+    SELECT S.*, A.LastUpdated FROM [Assessment].[Submission] S INNER JOIN [Assessment].[Assessment] A ON S.AssessmentId = A.Id WHERE A.Created > @lastRunDate OR A.LastUpdated > @lastRunDate
+  TargetTable: "[Assessment].[Submission]"
+  IncrementalColumn: "LastUpdated"
+
+- SourceQuery: >
+    SELECT * FROM [Assessment].[SubmissionTag] WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate
+  TargetTable: "[Assessment].[SubmissionTag]"
+  IncrementalColumn: "LastUpdated"
+
+- SourceQuery: >
+    SELECT Id, SubmissionId, Created, LastUpdated, CreatorScopeId FROM [Assessment].[Entry]  WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate
+  TargetTable: "[Assessment].[Entry]"
+  IncrementalColumn: "LastUpdated"
+
+- SourceQuery: >
+    SELECT SubmissionId, OwnerScopeId, DateCreated, LastUpdated, DateDeleted FROM [Assessment].[Comment] WHERE DateCreated > @lastRunDate OR LastUpdated > @lastRunDate
+  TargetTable: "[Assessment].[Comment]"
+  IncrementalColumn: "LastUpdated"
