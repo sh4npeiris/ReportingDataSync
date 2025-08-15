@@ -221,9 +221,9 @@
   PrimaryKeyColumns: ["Id"]
 
 - SourceQuery: >
-    SELECT sa.*, aa.DateCreated FROM [Space].[Artifact] sa INNER JOIN [Artifact].[Artifact] aa ON sa.ArtifactId = aa.[Id] WHERE aa.DateCreated > @lastRunDate
+    SELECT sa.ArtifactId, sa.SpaceId FROM [Space].[Artifact] sa INNER JOIN [Artifact].[Artifact] aa ON sa.ArtifactId = aa.[Id] WHERE aa.DateCreated > @lastRunDate
   TargetTable: "[Space].[ReportArtifact]"
-  IncrementalColumn: "DateCreated"
+  IncrementalColumn: "aa.DateCreated"
   PrimaryKeyColumns: ["ArtifactId", "SpaceId"]
 
 - SourceQuery: >
@@ -341,7 +341,18 @@
   PrimaryKeyColumns: ["Id"]
 
 - SourceQuery: >
-    SELECT SubmissionId, OwnerScopeId, DateCreated, LastUpdated, DateDeleted FROM [Assessment].[Comment] WHERE DateCreated > @lastRunDate OR LastUpdated > @lastRunDate
+    SELECT
+        SubmissionId,
+        OwnerScopeId,
+        DateCreated,
+        MAX(LastUpdated) AS LastUpdated,
+        MAX(DateDeleted) AS DateDeleted
+    FROM [Assessment].[Comment]
+    WHERE DateCreated > @lastRunDate OR LastUpdated > @lastRunDate
+    GROUP BY
+        SubmissionId,
+        OwnerScopeId,
+        DateCreated
   TargetTable: "[Assessment].[Comment]"
   IncrementalColumn: "LastUpdated"
   PrimaryKeyColumns: ["SubmissionId", "OwnerScopeId", "DateCreated"]

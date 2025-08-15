@@ -136,6 +136,7 @@ namespace ReportingDataSync.Repositories
         {
             var columns = await GetTableColumnsAsync(targetTable);
             var columnList = string.Join(", ", columns.Select(c => $"[{c}]"));
+            var keyJoin = string.Join(" AND ", keyColumns.Select(k => $"target.[{k}] = source.[{k}]"));
 
             var updateSetters = new StringBuilder();
             foreach (var col in columns)
@@ -147,19 +148,23 @@ namespace ReportingDataSync.Repositories
                 }
             }
 
-            var keyJoin = string.Join(" AND ", keyColumns.Select(k => $"target.[{k}] = source.[{k}]"));
+            var mergeQuery = new StringBuilder();
+            mergeQuery.AppendLine($"MERGE {targetTable} AS target");
+            mergeQuery.AppendLine($"USING {stagingTable} AS source");
+            mergeQuery.AppendLine($"ON ({keyJoin})");
 
-            var mergeQuery = $@"
-                MERGE {targetTable} AS target
-                USING {stagingTable} AS source
-                ON ({keyJoin})
-                WHEN MATCHED THEN
-                    UPDATE SET {updateSetters}
-                WHEN NOT MATCHED BY TARGET THEN
-                    INSERT ({columnList})
-                    VALUES ({string.Join(", ", columns.Select(c => $"source.[{c}]"))});";
+            // Only add the UPDATE clause if there are non-key columns to update
+            if (updateSetters.Length > 0)
+            {
+                mergeQuery.AppendLine($"WHEN MATCHED THEN");
+                mergeQuery.AppendLine($"    UPDATE SET {updateSetters}");
+            }
 
-            await ExecuteNonQueryAsync(mergeQuery);
+            mergeQuery.AppendLine($"WHEN NOT MATCHED BY TARGET THEN");
+            mergeQuery.AppendLine($"    INSERT ({columnList})");
+            mergeQuery.AppendLine($"    VALUES ({string.Join(", ", columns.Select(c => $"source.[{c}]"))});");
+
+            await ExecuteNonQueryAsync(mergeQuery.ToString());
         }
     }
 }
