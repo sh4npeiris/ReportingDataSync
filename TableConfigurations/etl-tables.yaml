@@ -1,358 +1,72 @@
+# ---------------------------------------------------------------------------
+# Example 1: Basic Incremental Load
+# This is the most common use case. It pulls new records from a table
+# based on a timestamp column.
+# ---------------------------------------------------------------------------
 - SourceQuery: >
-    SELECT * FROM [Artifact].[Artifact] WHERE DateCreated > @lastRunDate
-  TargetTable: "[Artifact].[Artifact]"
-  IncrementalColumn: "DateCreated"
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT Id, ArtifactId, OwnerScopeId, DateCreated, LastUpdated, DateDeleted, ParentCommentId FROM [Artifact].[Comment] WHERE DateCreated > @lastRunDate
-  TargetTable: "[Artifact].[Comment]"
-  IncrementalColumn: "DateCreated"
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Artifact].[Reaction] WHERE DateCreated > @lastRunDate
-  TargetTable: "[Artifact].[Reaction]"
-  IncrementalColumn: "DateCreated"
-  PrimaryKeyColumns: ["ArtifactId", "OwnerScopeId", "ReactionType"]
-
-- SourceQuery: >
-    SELECT t.* FROM [Artifact].[Tag] t INNER JOIN [Artifact].Artifact a ON t.ArtifactId = a.Id WHERE t.Created > @lastRunDate
-  TargetTable: "[Artifact].[Tag]"
-  IncrementalColumn: "Created"
-  PrimaryKeyColumns: ["ArtifactId", "TagId"]
-
-- SourceQuery: >
-    SELECT Id, SchoolId, CreatedBy, Grades, Name, DateArchived, DateDeleted, DateCreated, LastUpdated, ExternalId FROM [Classroom].[Classroom]
-  TargetTable: "[Classroom].[Classroom]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Classroom].[FamilyLastVisited] WHERE Date > @lastRunDate
-  TargetTable: "[Classroom].[FamilyLastVisited]"
-  IncrementalColumn: "Date"
-  PrimaryKeyColumns: ["ClassroomId", "FamilyId"]
-
-- SourceQuery: >
-    SELECT * FROM [Classroom].[StudentLastVisited] WHERE Date > @lastRunDate
-  TargetTable: "[Classroom].[StudentLastVisited]"
-  IncrementalColumn: "Date"
-  PrimaryKeyColumns: ["ClassroomId", "StudentId"]
-
-- SourceQuery: >
-    SELECT * FROM [Classroom].[Students] WHERE Created > @lastRunDate
-  TargetTable: "[Classroom].[Students]"
-  IncrementalColumn: "Created"
-  PrimaryKeyColumns: ["ClassroomId", "StudentId"]
-
-- SourceQuery: >
-    SELECT * FROM [Classroom].[TeacherLastVisited] WHERE Date > @lastRunDate
-  TargetTable: "[Classroom].[TeacherLastVisited]"
-  IncrementalColumn: "Date"
-  PrimaryKeyColumns: ["ClassroomId", "TeacherId"]
-
-- SourceQuery: >
-    SELECT * FROM [Classroom].[Teachers] WHERE Created > '2024-06-01'
-  TargetTable: "[Classroom].[Teachers]"
-  IncrementalColumn: "Created"
-  PrimaryKeyColumns: ["ClassroomId", "TeacherId"]
-
-- SourceQuery: >
-    SELECT * FROM [District].[District]
-  TargetTable: "[District].[District]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [District].[State]
-  TargetTable: "[District].[State]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["DistrictId", "StateId"]
-
-- SourceQuery: >
-    SELECT * FROM [Family].[Record]
-  TargetTable: "[Family].[Record]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Import].[Invite]
-  TargetTable: "[Import].[Invite]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["RecordId", "InviteId"]
-
-- SourceQuery: >
-    SELECT * FROM [Import].[Record] ir WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate AND NOT EXISTS (SELECT 1 FROM [Student].[Record] s WHERE s.RecordId = ir.Id)
-  TargetTable: "[Import].[Record]"
-  IncrementalColumn: "LastUpdated"
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Invite].[Record] WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate
-  TargetTable: "[Invite].[Record]"
-  IncrementalColumn: "LastUpdated"
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [License].[District]
-  TargetTable: "[License].[District]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [License].[PortfolioTemplates]
-  TargetTable: "[License].[PortfolioTemplates]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["LicenseId"]
-
-- SourceQuery: >
-    SELECT * FROM [License].[Proficiency]
-  TargetTable: "[License].[Proficiency]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["LicenseId"]
-
-- SourceQuery: >
-    SELECT * FROM [License].[QrCode]
-  TargetTable: "[License].[QrCode]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["LicenseId"]
-
-- SourceQuery: >
-    SELECT * FROM [License].[SpacesSchools]
-  TargetTable: "[License].[SpacesSchools]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["LicenseId", "SchoolId"]
-
-- SourceQuery: >
-    SELECT * FROM [Link].[ClassroomLink] WHERE Created > @lastRunDate
-  TargetTable: "[Link].[ClassroomLink]"
-  IncrementalColumn: "Created"
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT Id, ThreadId, OwnerScopeId, Created, Deleted FROM [Message].[Message] WHERE Created > @lastRunDate
-  TargetTable: "[Message].[Message]"
-  IncrementalColumn: "Created"
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT a.ArtifactId, a.PortfolioId, s.SectionId FROM [Portfolio].[Artifact] a INNER JOIN [Portfolio].[ArtifactSection] s ON a.ArtifactId = s.ArtifactId
-  TargetTable: "[Portfolio].[Artifact]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["ArtifactId", "PortfolioId", "SectionId"]
-
-- SourceQuery: >
-    SELECT * FROM [Portfolio].[ArtifactSection]
-  TargetTable: "[Portfolio].[ArtifactSection]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["ArtifactId", "SectionId"]
-
-- SourceQuery: >
-    SELECT Id, StudentId, TemplateId, Created, LastUpdated FROM [Portfolio].[Portfolio] WHERE Created > @lastRunDate
-  TargetTable: "[Portfolio].[Portfolio]"
-  IncrementalColumn: "Created"
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Portfolio].[Section]
-  TargetTable: "[Portfolio].[Section]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Portfolio].[ShareCode]
-  TargetTable: "[Portfolio].[ShareCode]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["PortfolioId"]
-
-- SourceQuery: >
-    SELECT Id, Name, Grades, Color, Published, TeacherCanViewAllStudents, DateDeleted FROM [Portfolio].[Template]
-  TargetTable: "[Portfolio].[Template]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Portfolio].[TemplateTarget]
-  TargetTable: "[Portfolio].[TemplateTarget]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["TemplateId", "TargetScopeId"]
-
-- SourceQuery: >
-    SELECT * FROM [Resource].[Proficiency]
-  TargetTable: "[Resource].[Proficiency]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [School].[School]
-  TargetTable: "[School].[School]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Scope].[Node]
-  TargetTable: "[Scope].[Node]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Space].[Artifact]
-  TargetTable: "[Space].[Artifact]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["ArtifactId"]
-
-- SourceQuery: >
-    SELECT [Space].[ArtifactTarget].*, [Artifact].[Artifact].DateCreated FROM [Space].[ArtifactTarget] INNER JOIN [Artifact].[Artifact] ON [Space].[ArtifactTarget].ArtifactId = [Artifact].[Artifact].Id WHERE [Artifact].[Artifact].DateCreated > @lastRunDate
-  TargetTable: "[Space].[ArtifactTarget]"
-  IncrementalColumn: "DateCreated"
-  PrimaryKeyColumns: ["ArtifactId", "TargetScopeId"]
-
-- SourceQuery: >
-    SELECT * FROM [Space].[Groups]
-  TargetTable: "[Space].[Groups]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Space].[Report]
-  TargetTable: "[Space].[Report]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT sa.ArtifactId, sa.SpaceId FROM [Space].[Artifact] sa INNER JOIN [Artifact].[Artifact] aa ON sa.ArtifactId = aa.[Id] WHERE aa.DateCreated > @lastRunDate
-  TargetTable: "[Space].[ReportArtifact]"
-  IncrementalColumn: "aa.DateCreated"
-  PrimaryKeyColumns: ["ArtifactId", "SpaceId"]
-
-- SourceQuery: >
-    SELECT Id, ClassroomId, Type, Color, Created, LastUpdated, Deleted FROM [Space].[Space] WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate
-  TargetTable: "[Space].[Space]"
-  IncrementalColumn: "LastUpdated"
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT UserId, DateTime, MIN(AuthType) AS AuthType FROM [Statistics].[Logins] WHERE DateTime > @lastRunDate GROUP BY UserId, DateTime
-  TargetTable: "[Statistics].[Logins]"
-  IncrementalColumn: "DateTime"
-  PrimaryKeyColumns: ["UserId", "DateTime"]
-
-- SourceQuery: >
-    SELECT * FROM [Student].[Record]
-  TargetTable: "[Student].[Record]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Tags].[Proficiency]
-  TargetTable: "[Tags].[Proficiency]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Tags].[ProficiencyScaleSet]
-  TargetTable: "[Tags].[ProficiencyScaleSet]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT Id, REPLACE(Subject, ',', '-') AS Subject, EducationLevels FROM [Tags].[StandardSets]
-  TargetTable: "[Tags].[StandardSets]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT Id, StandardSetId FROM [Tags].[Tag]
-  TargetTable: "[Tags].[Tag]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Teacher].[Record]
-  TargetTable: "[Teacher].[Record]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [User].[Admin]
-  TargetTable: "[User].[Admin]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT u.* FROM [user].[Email] u WHERE (EXISTS (SELECT 1 FROM [user].[admin] a WHERE a.userId = u.userId) OR EXISTS (SELECT 1 FROM [user].[teacher] t WHERE t.userId = u.userId) OR EXISTS (SELECT 1 FROM [user].[family] f WHERE f.userId = u.userId)) AND NOT (EXISTS (SELECT 1 FROM [user].[student] s WHERE s.userId = u.userId) AND NOT (EXISTS (SELECT 1 FROM [user].[admin] a WHERE a.userId = u.userId) OR EXISTS (SELECT 1 FROM [user].[teacher] t WHERE t.userId = u.userId) OR EXISTS (SELECT 1 FROM [user].[family] f WHERE f.userId = u.userId)))
-  TargetTable: "[User].[Email]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["UserId", "Email"]
-
-- SourceQuery: >
-    SELECT * FROM [User].[Family]
-  TargetTable: "[User].[Family]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT u.* FROM [user].[Profile] u WHERE (EXISTS (SELECT 1 FROM [user].[admin] a WHERE a.userId = u.userId) OR EXISTS (SELECT 1 FROM [user].[teacher] t WHERE t.userId = u.userId) OR EXISTS (SELECT 1 FROM [user].[family] f WHERE f.userId = u.userId)) AND NOT (EXISTS (SELECT 1 FROM [user].[student] s WHERE s.userId = u.userId) AND NOT (EXISTS (SELECT 1 FROM [user].[admin] a WHERE a.userId = u.userId) OR EXISTS (SELECT 1 FROM [user].[teacher] t WHERE t.userId = u.userId) OR EXISTS (SELECT 1 FROM [user].[family] f WHERE f.userId = u.userId)))
+    SELECT UserId, ProfileId, FirstName, LastName, DateCreated, LastUpdated 
+    FROM [User].[Profile] 
+    WHERE LastUpdated > @lastRunDate
   TargetTable: "[User].[Profile]"
-  IncrementalColumn: ""
+  IncrementalColumn: "LastUpdated"
   PrimaryKeyColumns: ["UserId"]
 
+# ---------------------------------------------------------------------------
+# Example 2: Full Load (Truncate and Reload)
+# Use this for dimension tables or smaller tables that you want to completely
+# refresh on every run. The IncrementalColumn is left empty.
+# ---------------------------------------------------------------------------
 - SourceQuery: >
-    SELECT * FROM [User].[Student]
-  TargetTable: "[User].[Student]"
+    SELECT ProductId, ProductName, Category, UnitPrice FROM [Catalog].[Product]
+  TargetTable: "[Catalog].[Product]"
   IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
+  PrimaryKeyColumns: ["ProductId"]
 
+# ---------------------------------------------------------------------------
+# Example 3: Incremental Load with a Composite Primary Key
+# This handles linking tables or tables where uniqueness is defined by
+# multiple columns.
+# ---------------------------------------------------------------------------
 - SourceQuery: >
-    SELECT * FROM [User].[Teacher]
-  TargetTable: "[User].[Teacher]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
+    SELECT * FROM [Sales].[OrderDetails] WHERE DateAdded > @lastRunDate
+  TargetTable: "[Sales].[OrderDetails]"
+  IncrementalColumn: "DateAdded"
+  PrimaryKeyColumns: ["OrderId", "ProductId"]
 
+# ---------------------------------------------------------------------------
+# Example 4: Incremental Column from a JOINed Table
+# This is for cases where the timestamp you need to filter on exists in a
+# related table, but the columns you want to select are from the main table.
+# The `IncrementalColumn` uses the table alias.
+# ---------------------------------------------------------------------------
 - SourceQuery: >
-    SELECT * FROM [User].[User]
-  TargetTable: "[User].[User]"
-  IncrementalColumn: ""
-  PrimaryKeyColumns: ["Id"]
+    SELECT s.SubscriptionId, s.UserId, s.PlanType 
+    FROM [Subscription].[Record] s
+    INNER JOIN [User].[Profile] u ON s.UserId = u.UserId
+    WHERE u.LastUpdated > @lastRunDate
+  TargetTable: "[Subscription].[Record]"
+  IncrementalColumn: "u.LastUpdated"
+  PrimaryKeyColumns: ["SubscriptionId"]
 
-- SourceQuery: >
-    SELECT * FROM [Assessment].[Assessment] WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate
-  TargetTable: "[Assessment].[Assessment]"
-  IncrementalColumn: "LastUpdated"
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT S.*, A.LastUpdated FROM [Assessment].[Submission] S INNER JOIN [Assessment].[Assessment] A ON S.AssessmentId = A.Id WHERE A.Created > @lastRunDate OR A.LastUpdated > @lastRunDate
-  TargetTable: "[Assessment].[Submission]"
-  IncrementalColumn: "LastUpdated"
-  PrimaryKeyColumns: ["Id"]
-
-- SourceQuery: >
-    SELECT * FROM [Assessment].[SubmissionTag] WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate
-  TargetTable: "[Assessment].[SubmissionTag]"
-  IncrementalColumn: "LastUpdated"
-  PrimaryKeyColumns: ["SubmissionId", "TagId"]
-
-- SourceQuery: >
-    SELECT Id, SubmissionId, Created, LastUpdated, CreatorScopeId FROM [Assessment].[Entry] WHERE Created > @lastRunDate OR LastUpdated > @lastRunDate
-  TargetTable: "[Assessment].[Entry]"
-  IncrementalColumn: "LastUpdated"
-  PrimaryKeyColumns: ["Id"]
-
+# ---------------------------------------------------------------------------
+# Example 5: De-duplicating Source Data with GROUP BY
+# This handles data quality issues in the source where duplicate records
+# might exist. It groups by the primary key and takes the most recent
+# values for other columns, ensuring the data is clean before the merge.
+# ---------------------------------------------------------------------------
 - SourceQuery: >
     SELECT
-        SubmissionId,
-        OwnerScopeId,
-        DateCreated,
-        MAX(LastUpdated) AS LastUpdated,
-        MAX(DateDeleted) AS DateDeleted
-    FROM [Assessment].[Comment]
-    WHERE DateCreated > @lastRunDate OR LastUpdated > @lastRunDate
+        LoginId,
+        UserId,
+        LoginTimestamp,
+        MAX(IpAddress) AS IpAddress,
+        MAX(ClientVersion) AS ClientVersion
+    FROM [Security].[LoginHistory]
+    WHERE LoginTimestamp > @lastRunDate
     GROUP BY
-        SubmissionId,
-        OwnerScopeId,
-        DateCreated
-  TargetTable: "[Assessment].[Comment]"
-  IncrementalColumn: "LastUpdated"
-  PrimaryKeyColumns: ["SubmissionId", "OwnerScopeId", "DateCreated"]
+        LoginId,
+        UserId,
+        LoginTimestamp
+  TargetTable: "[Security].[LoginHistory]"
+  IncrementalColumn: "LoginTimestamp"
+  PrimaryKeyColumns: ["LoginId", "UserId", "LoginTimestamp"]

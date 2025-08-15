@@ -3,15 +3,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
+using NLog;
+using NLog.Extensions.Logging;
 using ReportingDataSync.Interfaces;
 using ReportingDataSync.Models;
 using ReportingDataSync.Models.Configuration;
 using ReportingDataSync.Repositories;
 using ReportingDataSync.Services;
 using YamlDotNet.Serialization;
-using NLog;
-using NLog.Extensions.Logging;
-using System.IO;
 
 public class Program
 {
