@@ -30,9 +30,7 @@ namespace ReportingDataSync.Services
                 foreach (var config in configurations)
                 {
                     _logger.LogInformation("Processing table: {TargetTable}", config.TargetTable);
-
                     await ProcessTableAsync(config);
-
                     _logger.LogInformation("Completed table: {TargetTable}", config.TargetTable);
                 }
             }
@@ -43,87 +41,82 @@ namespace ReportingDataSync.Services
             }
         }
 
+        private string GetStagingTableName(string targetTable)
+        {
+            var cleanName = targetTable.Replace("[", "").Replace("]", "").Replace('.', '_');
+            return $"[ETL].[{cleanName}_Staging]";
+        }
+
         private async Task ProcessTableAsync(TableConfiguration config)
         {
             try
             {
-                bool isIncremental = !string.IsNullOrEmpty(config.IncrementalColumn);
-                DateTime? lastRunDate = null;
-                DateTime? extractedMaxDate = null;
-
-                _logger.LogInformation("Load mode: {Mode}",
-                    isIncremental ? "Incremental" : "Full");
-
-                if (isIncremental)
+                if (config.IsFullLoad)
                 {
-                    // 1) fetch the previous watermark (or school‐year start)
-                    lastRunDate = await _targetRepository.GetLastRunDateAsync(config.TargetTable);
-                    _logger.LogInformation("Last run date: {LastRunDate}", lastRunDate);
-
-                    // 2) call GetMaxIncrementalValueAsync to get MAX(dateCol) > lastRunDate
-                    extractedMaxDate = await _sourceRepository.GetMaxIncrementalValueAsync(
-                        config.SourceQuery,
-                        config.IncrementalColumn,
-                        lastRunDate.Value
-                    );
-
-                    if (!extractedMaxDate.HasValue)
-                    {
-                        // No new rows since lastRunDate
-                        _logger.LogInformation(
-                            "No new rows found for {TargetTable} since {LastRunDate}. Skipping bulk load.",
-                            config.TargetTable, lastRunDate
-                        );
-                        return; // exit early, no need to open a reader or copy anything
-                    }
-
-                    if (extractedMaxDate.Value <= lastRunDate.Value)
-                    {
-                        // This can happen if “MAX” is exactly equal (unlikely), but guard anyway
-                        _logger.LogInformation(
-                            "Max date ({MaxDate}) is not greater than last run date ({LastRunDate}) for {TargetTable}. Skipping.",
-                            extractedMaxDate, lastRunDate, config.TargetTable
-                        );
-                        return;
-                    }
+                    await ProcessFullLoadAsync(config);
                 }
                 else
                 {
-                    // Full‐load: truncate first
-                    _logger.LogWarning("Truncating table before full load");
-                    await _targetRepository.TruncateTableAsync(config.TargetTable);
+                    await ProcessIncrementalLoadAsync(config);
                 }
-
-                // 3) At this point:
-                //    - Full load: open reader for entire query (no @lastRunDate param)
-                //    - Incremental: open reader for rows WHERE IncrementalColumn > lastRunDate
-                using (var reader = await _sourceRepository.ExecuteSourceQueryAsync(config.SourceQuery, lastRunDate))
-                {
-                    _logger.LogInformation("Starting bulk copy for {TargetTable})", config.TargetTable);
-
-                    int rowsCopied = await _targetRepository.CopyIntoReportingTableAsync(reader, config.TargetTable);
-
-                    _logger.LogInformation("Copied {RowCount} rows to {TargetTable}", rowsCopied, config.TargetTable);
-                }
-
-                // 4) If this was an incremental run, update the watermark to the new max
-                if (isIncremental && extractedMaxDate.HasValue)
-                {
-                    await _targetRepository.UpdateLastRunDateAsync(
-                        config.TargetTable,
-                        extractedMaxDate.Value
-                    );
-                    _logger.LogInformation(
-                        "Watermark for {TargetTable} updated to {NewWatermark}",
-                        config.TargetTable, extractedMaxDate.Value
-                    );
-                }
-
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing table: {TableName}", config.TargetTable);
+                throw; // Rethrow to stop the entire process on a single table's failure
             }
+        }
+
+        private async Task ProcessFullLoadAsync(TableConfiguration config)
+        {
+            _logger.LogInformation("Load mode: Full");
+
+            _logger.LogWarning("Truncating target table before full load: {TargetTable}", config.TargetTable);
+            await _targetRepository.TruncateTableAsync(config.TargetTable);
+
+            using var reader = await _sourceRepository.ExecuteSourceQueryAsync(config.SourceQuery, null);
+
+            _logger.LogInformation("Starting bulk copy directly to {TargetTable}", config.TargetTable);
+            int rowsCopied = await _targetRepository.CopyIntoTableAsync(reader, config.TargetTable);
+            _logger.LogInformation("Copied {RowCount} rows to {TargetTable}", rowsCopied, config.TargetTable);
+        }
+
+        private async Task ProcessIncrementalLoadAsync(TableConfiguration config)
+        {
+            _logger.LogInformation("Load mode: Incremental");
+
+            var lastRunDate = await _targetRepository.GetLastRunDateAsync(config.TargetTable);
+            _logger.LogInformation("Last run date: {LastRunDate}", lastRunDate);
+
+            var extractedMaxDate = await _sourceRepository.GetMaxIncrementalValueAsync(
+                config.SourceQuery, config.IncrementalColumn, lastRunDate);
+
+            if (!extractedMaxDate.HasValue || extractedMaxDate.Value <= lastRunDate)
+            {
+                _logger.LogInformation(
+                    "No new rows found for {TargetTable} since {LastRunDate}. Skipping.",
+                    config.TargetTable, lastRunDate);
+                return;
+            }
+
+            var stagingTable = GetStagingTableName(config.TargetTable);
+            await _targetRepository.TruncateTableAsync(stagingTable);
+
+            using (var reader = await _sourceRepository.ExecuteSourceQueryAsync(config.SourceQuery, lastRunDate))
+            {
+                _logger.LogInformation("Starting bulk copy to staging table {StagingTable}", stagingTable);
+                int rowsCopied = await _targetRepository.CopyIntoTableAsync(reader, stagingTable);
+                _logger.LogInformation("Copied {RowCount} rows to {StagingTable}", rowsCopied, stagingTable);
+
+                if (rowsCopied > 0)
+                {
+                    _logger.LogInformation("Merging data from {StagingTable} to {TargetTable}", stagingTable, config.TargetTable);
+                    await _targetRepository.MergeDataAsync(stagingTable, config.TargetTable, config.PrimaryKeyColumns);
+                }
+            }
+
+            await _targetRepository.UpdateLastRunDateAsync(config.TargetTable, extractedMaxDate.Value);
+            _logger.LogInformation("Watermark for {TargetTable} updated to {NewWatermark}", config.TargetTable, extractedMaxDate.Value);
         }
     }
 }

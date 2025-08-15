@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using ReportingDataSync.Interfaces;
 using ReportingDataSync.Models.Configuration;
+using System.Text;
 
 namespace ReportingDataSync.Repositories
 {
@@ -84,7 +85,7 @@ namespace ReportingDataSync.Repositories
             return new DateTime(year, _settings.DefaultSchoolYearStartMonth, 1);
         }
 
-        public async Task<int> CopyIntoReportingTableAsync(SqlDataReader dataReader, string targetTable)
+        public async Task<int> CopyIntoTableAsync(SqlDataReader dataReader, string targetTable)
         {
             using var tx = _connection.BeginTransaction();
             using var bulkCopy = new SqlBulkCopy(_connection, SqlBulkCopyOptions.CheckConstraints, tx)
@@ -104,6 +105,61 @@ namespace ReportingDataSync.Repositories
         {
             var query = $"TRUNCATE TABLE {tableName}";
             await ExecuteNonQueryAsync(query);
-        }        
+        }
+
+        private async Task<List<string>> GetTableColumnsAsync(string tableName)
+        {
+            var columns = new List<string>();
+            var parts = tableName.Replace("[", "").Replace("]", "").Split('.');
+            var schema = parts[0];
+            var table = parts[1];
+
+            var query = @"
+                SELECT COLUMN_NAME
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = @schema AND TABLE_NAME = @table
+                ORDER BY ORDINAL_POSITION";
+
+            using var cmd = new SqlCommand(query, _connection);
+            cmd.Parameters.AddWithValue("@schema", schema);
+            cmd.Parameters.AddWithValue("@table", table);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                columns.Add(reader.GetString(0));
+            }
+            return columns;
+        }
+
+        public async Task MergeDataAsync(string stagingTable, string targetTable, List<string> keyColumns)
+        {
+            var columns = await GetTableColumnsAsync(targetTable);
+            var columnList = string.Join(", ", columns.Select(c => $"[{c}]"));
+
+            var updateSetters = new StringBuilder();
+            foreach (var col in columns)
+            {
+                if (!keyColumns.Contains(col, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (updateSetters.Length > 0) updateSetters.Append(", ");
+                    updateSetters.Append($"target.[{col}] = source.[{col}]");
+                }
+            }
+
+            var keyJoin = string.Join(" AND ", keyColumns.Select(k => $"target.[{k}] = source.[{k}]"));
+
+            var mergeQuery = $@"
+                MERGE {targetTable} AS target
+                USING {stagingTable} AS source
+                ON ({keyJoin})
+                WHEN MATCHED THEN
+                    UPDATE SET {updateSetters}
+                WHEN NOT MATCHED BY TARGET THEN
+                    INSERT ({columnList})
+                    VALUES ({string.Join(", ", columns.Select(c => $"source.[{c}]"))});";
+
+            await ExecuteNonQueryAsync(mergeQuery);
+        }
     }
 }

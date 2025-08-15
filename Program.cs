@@ -11,6 +11,7 @@ using ReportingDataSync.Services;
 using YamlDotNet.Serialization;
 using NLog;
 using NLog.Extensions.Logging;
+using System.IO;
 
 public class Program
 {
@@ -94,7 +95,12 @@ public class Program
 
     private static IEnumerable<TableConfiguration> LoadTableConfigurations()
     {
-        var yamlContent = File.ReadAllText(Path.Combine("TableConfigurations", "etl-tables.yaml"));
+        var path = Path.Combine("TableConfigurations", "etl-tables.yaml");
+
+        // Use a StreamReader to robustly handle file encoding and BOM
+        using var reader = new StreamReader(path, detectEncodingFromByteOrderMarks: true);
+        var yamlContent = reader.ReadToEnd();
+
         var deserializer = new DeserializerBuilder()
             .Build();
 
